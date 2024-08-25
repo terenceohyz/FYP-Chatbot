@@ -14,9 +14,9 @@ Follow these steps to set up and run the project:
 
    On Windows/Mac/Linus:
    ```bash
-   python -m venv medical
-   .\medical\Scripts\activate (Windows)
-   source medical/bin/activate (Mac/Linux)
+   python -m venv medibot
+   .\medibot\Scripts\activate (Windows)
+   source medibot/bin/activate (Mac/Linux)
 
 2. **Install the required packages**:
 
