@@ -12,15 +12,11 @@ Follow these steps to set up and run the project:
 
 2. **Create and Activate the Virtual Environment**:
 
-   On Windows:
+   On Windows/Mac/Linus:
    ```bash
    python -m venv medical
-   .\medical\Scripts\activate
-   ```bash
-   On Mac/Linux: 
-   ```bash
-   python -m venv medical
-   source medical/bin/activate
+   .\medical\Scripts\activate (Windows)
+   source medical/bin/activate (Mac/Linux)
 
 2. **Install the required packages**:
 
