@@ -16,7 +16,8 @@ Follow these steps to set up and run the project:
    ```bash
    python -m venv medical
    .\medical\Scripts\activate
-   On Windows:
+
+   On Mac/Linux: 
    ```bash
    python -m venv medical
    source medical/bin/activate
