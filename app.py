@@ -2,7 +2,7 @@ import os
 import json
 import sqlite3
 import time
-from flask import Flask, render_template, request, session, jsonify, redirect, url_for
+from flask import Flask, render_template, request, session, jsonify, redirect, url_for, abort
 from flask_login import LoginManager, current_user, login_required, login_user, logout_user
 from oauthlib.oauth2 import WebApplicationClient
 import requests
@@ -19,6 +19,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from db import init_db_command
 from user import User
 from dotenv import load_dotenv
+from models import ChatSession, Message
 load_dotenv()
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -199,48 +200,82 @@ def logout():
     return redirect(url_for("login"))
 
 @app.route('/new_chat', methods=['POST'])
+@login_required
 def new_chat():
-    session.pop('history', None)
-    return jsonify(success=True)
+    chat_id = ChatSession.create(current_user.id, title="New Chat")
+    return jsonify(success=True, chat_id=chat_id)
 
-@app.route('/past_chats', methods=['GET'])
-def past_chats():
-    past_chats = session.get('past_chats', [])
-    return render_template('past_chats.html', past_chats=past_chats)
+@app.route('/get_chats', methods=['GET'])
+@login_required
+def get_chats():
+    chats = ChatSession.get_all_for_user(current_user.id)
+    chat_list = [{'id': chat['id'], 'title': chat['title'] or 'Untitled Chat'} for chat in chats]
+    print(f"Chat list being sent to client: {chat_list}")
+    return jsonify(chat_list)
+
+@app.route('/delete_chat', methods=['POST'])
+@login_required
+def delete_chat():
+    data = request.get_json()
+    chat_id = data.get('chat_id')
+    chat_session = ChatSession.get(chat_id)
+    if chat_session and chat_session['user_id'] == current_user.id:
+        ChatSession.delete(chat_id)
+        return jsonify(success=True)
+    else:
+        return jsonify(success=False), 403
 
 @app.route('/', methods=['GET', 'POST'])
+@login_required
 def chat():
-    if not current_user.is_authenticated:
-        return redirect(url_for('login'))
+    chat_id = request.args.get('chat_id')
+    if not chat_id:
+        # Start a new chat session
+        chat_id = ChatSession.create(current_user.id, title="New Chat")
+        return redirect(url_for('chat', chat_id=chat_id))
 
-    memory = get_memory()
+    # Get the chat session
+    chat_session = ChatSession.get(chat_id)
+    if not chat_session or chat_session['user_id'] != current_user.id:
+        # Invalid chat session or not owned by current user
+        return redirect(url_for('chat'))
+
+    # Load messages for this chat session
+    messages = Message.get_all_for_chat(chat_id)
+    print(f"Messages retrieved for chat_id {chat_id}: {messages}")
+    
+    # Build memory from messages
+    memory = ConversationBufferWindowMemory(return_messages=True, memory_key="history", k=1)
+    for msg in messages:
+        if msg['sender'] == 'user':
+            memory.chat_memory.add_message(HumanMessage(content=msg['content']))
+        else:
+            memory.chat_memory.add_message(AIMessage(content=msg['content']))
+
     prompt = PromptTemplate(template=template, input_variables=["history", "question"])
     llm_chain = LLMChain(prompt=prompt, llm=llm_init, verbose=True, memory=memory)
 
     if request.method == 'GET':
-        return render_template('chat.html', key=get_public_key().decode())
+        return render_template('chat.html', chat=messages, chat_id=chat_id, key=get_public_key().decode())
+
     elif request.method == 'POST':
         user_message = request.json.get('msg')
-        print(f"Encrypted message: {user_message}")
+        print(user_message)
         text = decrypt_data(user_message)
         memory.chat_memory.add_message(HumanMessage(content=text))
-        
+        Message.create(chat_id, 'user', text)
+        if chat_session['title'] == 'New Chat' or not chat_session['title']:
+            truncated_text = text[:30] + ('...' if len(text) > 30 else '')
+            ChatSession.update_title(chat_id, truncated_text)
+
         try:
             response = llm_chain.invoke({
                 "history": memory.buffer,
                 "question": text
             })
-            if isinstance(response, dict) and 'text' in response:
-                response_text = response['text']
-            elif isinstance(response, str):
-                response_text = response
-            elif isinstance(response, list):
-                response_text = ' '.join(response)
-            else:
-                response_text = str(response)
-
+            response_text = response if isinstance(response, str) else response['text']
             memory.chat_memory.add_message(AIMessage(content=response_text))
-            save_memory(memory)
+            Message.create(chat_id, 'ai', response_text)
             encrypted_response = encrypt_data(response_text)
             return jsonify({
                 'from': 'MediBot',
@@ -255,6 +290,6 @@ def chat():
             }), 500
 
     return render_template('chat.html', chat=memory.buffer)
-
+ 
 if __name__ == '__main__':
     app.run(debug=True)

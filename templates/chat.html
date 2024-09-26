@@ -2,86 +2,130 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chatbot</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/forge/0.10.0/forge.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
+        /* Reset margins and paddings */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #f0f0f0;
             font-family: Arial, sans-serif;
-        }
-        #chat-container {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            width: 60%;
-            max-width: 800px;
-            min-width: 300px;
+            height: 100vh;
             overflow: hidden;
         }
-        #chat-log {
-            height: 400px;
-            overflow-y: auto;
-            padding: 20px;
-            border-bottom: 1px solid #ccc;
-        }
-        #chat-log p {
-            margin: 10px 0;
-        }
-        #chat-input {
-            display: flex;
-            padding: 20px;
-        }
-        #chat-input input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            margin-right: 10px;
-        }
-        #chat-input button {
-            padding: 10px 20px;
-            border: none;
-            background-color: #007BFF;
+
+        /* Sidebar styles */
+        #sidebar {
+            width: 250px;
+            background-color: #2b2b2b;
             color: white;
-            border-radius: 4px;
-            cursor: pointer;
+            overflow-y: auto;
+            flex-shrink: 0;
         }
-        #chat-input button:hover {
-            background-color: #0056b3;
+
+        #sidebar h2 {
+            text-align: center;
+            padding: 20px;
+            border-bottom: 1px solid #444;
         }
-        #chat-actions {
+
+        #sidebar ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .chat-item {
             display: flex;
             justify-content: space-between;
-            padding: 10px 20px;
-            border-top: 1px solid #ccc;
-            background-color: #f9f9f9;
-        }
-        #chat-actions button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
+            align-items: center;
+            padding: 10px 15px;
             cursor: pointer;
+            border-bottom: 1px solid #444;
+            overflow: hidden;
+            background-color: #2b2b2b; /* Ensuring consistent background color */
         }
-        #chat-actions .new-chat-btn {
-            background-color: #28a745;
+
+        .chat-item:hover {
+            background-color: #444;
+        }
+
+        .chat-item.active {
+            background-color: #444;
+        }
+
+        .chat-title {
+            flex-grow: 1;
+            color: #fff;
+            white-space: nowrap;   /* Prevent wrapping */
+            overflow: hidden;      /* Hide overflow */
+            text-overflow: ellipsis; /* Show ellipsis for long titles */
+            margin-right: 10px;   /* Add space between title and delete button */
+        }
+
+        /* Ensure delete button has its own red background */
+        .delete-chat-btn {
+            background-color: red;
+            border: none;
             color: white;
+            font-size: 10px;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 3px;
+            width: 50px;  /* Fixed width */
+            height: 25px; /* Fixed height */
+            flex-shrink: 0; /* Ensure button doesn't shrink */
         }
-        #chat-actions .new-chat-btn:hover {
+
+        /* Hover effect for delete button */
+        .delete-chat-btn:hover {
+            background-color: darkred;
+        }
+
+        /* Ensure that the chat item and delete button are aligned properly */
+        #chat-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #chat-list .chat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 40px;
+        }
+
+        /* Styles for New Chat Button */
+        #new-chat-sidebar-btn {
+            background-color: #28a745;
+            border: none;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            border-top: 1px solid #444;
+        }
+
+        #new-chat-sidebar-btn:hover {
             background-color: #218838;
         }
-        #chat-actions .past-chats-btn {
-            background-color: #ffc107;
-            color: black;
+
+        /* Main content styles */
+        #main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
         }
-        #chat-actions .past-chats-btn:hover {
-            background-color: #e0a800;
-        }
+
+        /* User profile */
         #user-profile {
             display: flex;
             align-items: center;
@@ -90,19 +134,23 @@
             border-bottom: 1px solid #ccc;
             background-color: #f9f9f9;
         }
+
         #user-profile img {
             border-radius: 50%;
             width: 40px;
             height: 40px;
             margin-right: 10px;
         }
+
         #user-profile div {
             display: flex;
             align-items: center;
         }
+
         #user-profile span {
             margin-right: 10px;
         }
+
         #user-profile button {
             padding: 10px 20px;
             background-color: #dc3545;
@@ -111,19 +159,91 @@
             border-radius: 4px;
             cursor: pointer;
         }
+
         #user-profile button:hover {
             background-color: #c82333;
         }
+
+        /* Chat container */
+        #chat-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chat-log {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        #chat-log p {
+            margin-bottom: 10px;
+        }
+
+        #chat-input {
+            display: flex;
+            padding: 10px 20px;
+            border-top: 1px solid #ccc;
+            background-color: #fff;
+        }
+
+        #chat-input input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        #chat-input button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #chat-input button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Loading spinner */
         #loading-spinner {
             display: none;
             text-align: center;
-            padding: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border-top: 1px solid #ccc;
             font-weight: bold;
+        }
+
+        /* Message styling */
+        .message {
+            margin-bottom: 15px;
+        }
+
+        .message strong {
+            margin-right: 5px;
+            display: inline;
+        }
+
+        .bot-response {
+            display: inline;
         }
     </style>
 </head>
 <body>
-    <div id="chat-container">
+    <div id="sidebar">
+        <h2>Past Chats</h2>
+        <ul id="chat-list">
+            <!-- Past chats will be loaded here -->
+        </ul>
+        <button id="new-chat-sidebar-btn">+ New Chat</button>
+    </div>
+    <div id="main-content">
         {% if current_user.is_authenticated %}
         <div id="user-profile">
             <div>
@@ -136,97 +256,172 @@
             <button id="logout-btn">Logout</button>
         </div>
         {% endif %}
-        <div id="chat-log">
-            <p><strong>MediBot:</strong> Hello! How can I help you today? Please provide me with your symptoms or concerns.</p>
-            {% for message in chat %}
-                <p><strong>{{ 'You' if message.is_user else 'MediBot' }}:</strong> {{ message.content }}</p>
-            {% endfor %}
-        </div>
-        <div id="loading-spinner">Generating Medibot Response...</div>
-        <div id="chat-input">
-            <input type="text" id="user-input" placeholder="Type your prompts here...">
-            <button id="send-btn">Send</button>
-        </div>
-        <div id="chat-actions">
-            <button class="past-chats-btn">Past Chats</button>
-            <button class="new-chat-btn">New Chat</button>
+        <div id="chat-container">
+            <div id="chat-log">
+                <p><strong>MediBot:</strong> Hello! How can I help you today? Please provide me with your symptoms or concerns.</p>
+                {% for message in chat %}
+                    <div class="message">
+                        <strong>{{ 'You' if message['sender'] == 'user' else 'MediBot' }}:</strong>
+                        <span>{{ message['content'] }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+            <div id="loading-spinner">Generating MediBot response...</div>
+            <div id="chat-input">
+                <input type="text" id="user-input" placeholder="Type your message here...">
+                <button id="send-btn">Send</button>
+            </div>
         </div>
     </div>
 
     <script>
-        function appendMessage(from, msg) {
-        if (from === 'MediBot') {
-            $('#chat-log').append('<p><strong>' + from + ':</strong> <span class="bot-response"></span></p>');
-            } else {
-            $('#chat-log').append('<p><strong>' + from + ':</strong> ' + msg + '</p>');
+        $(document).ready(function() {
+            var chat_id = '{{ chat_id }}';
+            var key = `{{ key|safe }}`;
+
+            // Load past chats
+            function loadChats() {
+                $.ajax({
+                    url: '/get_chats',
+                    type: 'GET',
+                    success: function(chats) {
+                        console.log('Chats received:', chats);
+                        var chatList = $('#chat-list');
+                        chatList.empty();
+                        chats.forEach(function(chat) {
+                            var chatItem = $('<li>').addClass('chat-item').data('chat-id', chat.id);
+                            var chatTitleText = chat.title || 'Untitled Chat';
+                            var chatTitle = $('<span>').addClass('chat-title').text(chatTitleText);
+                            var deleteBtn = $('<button>').addClass('delete-chat-btn').html('✖');
+                            console.log('Chat title text:', chatTitleText);
+                            deleteBtn.data('chat-id', chat.id);
+                            chatItem.append(chatTitle).append(deleteBtn);
+
+                            if (chat.id == chat_id) {
+                                chatItem.addClass('active');
+                            }
+
+                            chatTitle.click(function() {
+                                window.location.href = '/?chat_id=' + chat.id;
+                            });
+
+                            deleteBtn.click(function(event) {
+                                event.stopPropagation(); // Prevent triggering the chatTitle click
+                                deleteChat(chat.id);
+                            });
+
+                            chatList.append(chatItem);
+                        });
+                    }
+                });
             }
-             }
-        function typeResponse(responseText) {
-            let i = 0;
-            const speed = 10; // Delay in milliseconds between each character
-            function typeWriter() {
-                if (i < responseText.length) {
-                    $('.bot-response').last().append(responseText.charAt(i));
-                    i++;
-                    setTimeout(typeWriter, speed);
+
+            function deleteChat(chatId) {
+                if (confirm("Are you sure you want to delete this chat? This action cannot be undone.")) {
+                    $.ajax({
+                        url: '/delete_chat',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ chat_id: chatId }),
+                        success: function(response) {
+                            if (response.success) {
+                                if (chat_id == chatId) {
+                                    // If the current chat was deleted, redirect to a new chat
+                                    window.location.href = '/';
+                                } else {
+                                    // Reload the chat list
+                                    loadChats();
+                                }
+                            } else {
+                                alert('Failed to delete the chat.');
+                            }
+                        },
+                        error: function() {
+                            alert('An error occurred while deleting the chat.');
+                        }
+                    });
                 }
             }
-            typeWriter();
+
+            function appendMessage(from, msg) {
+                if (from === 'MediBot') {
+                    $('#chat-log').append('<div class="message"><strong>' + from + ':</strong> <span class="bot-response">' + msg.trim() + '</span></div>');
+                } else {
+                    $('#chat-log').append('<div class="message"><strong>' + from + ':</strong> ' + msg.trim() + '</div>');
+                }
+                $('#chat-log').scrollTop($('#chat-log')[0].scrollHeight);
             }
 
-        async function encryptMessage(publicKeyPem, plainText) {
-            const publicKey = forge.pki.publicKeyFromPem(publicKeyPem);
-            const aesKey = forge.random.getBytesSync(32);  // Generate a random AES key
-            const iv = forge.random.getBytesSync(16);  // Generate a random IV
+            async function encryptMessage(publicKeyPem, plainText) {
+                const publicKey = forge.pki.publicKeyFromPem(publicKeyPem);
+                const aesKey = forge.random.getBytesSync(32);  // Generate a random AES key
+                const iv = forge.random.getBytesSync(16);  // Generate a random IV
 
-            // Encrypt the plain text using AES
-            const cipher = forge.cipher.createCipher('AES-GCM', aesKey);
-            cipher.start({ iv: iv });
-            cipher.update(forge.util.createBuffer(plainText));
-            cipher.finish();
+                // Encrypt the plain text using AES
+                const cipher = forge.cipher.createCipher('AES-GCM', aesKey);
+                cipher.start({ iv: iv });
+                cipher.update(forge.util.createBuffer(plainText));
+                cipher.finish();
 
-            const encryptedMessage = cipher.output.bytes();
-            const tag = cipher.mode.tag.bytes();
+                const encryptedMessage = cipher.output.bytes();
+                const tag = cipher.mode.tag.bytes();
 
-            // Encrypt the AES key using RSA
-            const encryptedAesKey = publicKey.encrypt(aesKey, 'RSA-OAEP', {
-                md: forge.md.sha256.create(),
-                mgf1: forge.mgf1.create(),
+                // Encrypt the AES key using RSA
+                const encryptedAesKey = publicKey.encrypt(aesKey, 'RSA-OAEP', {
+                    md: forge.md.sha256.create(),
+                    mgf1: forge.mgf1.create(),
+                });
+
+                return JSON.stringify({
+                    encrypted_aes_key: forge.util.encode64(encryptedAesKey),
+                    iv: forge.util.encode64(iv),
+                    ciphertext: forge.util.encode64(encryptedMessage),
+                    tag: forge.util.encode64(tag),
+                });
+            }
+
+            loadChats();
+
+            $('#new-chat-sidebar-btn').click(function() {
+                $.ajax({
+                    url: '/new_chat',
+                    type: 'POST',
+                    success: function(response) {
+                        if (response.success) {
+                            window.location.href = '/?chat_id=' + response.chat_id;
+                        }
+                    }
+                });
             });
 
-            return JSON.stringify({
-                encrypted_aes_key: forge.util.encode64(encryptedAesKey),
-                iv: forge.util.encode64(iv),
-                ciphertext: forge.util.encode64(encryptedMessage),
-                tag: forge.util.encode64(tag),
+            $('#logout-btn').click(function() {
+                window.location.href = '/logout';
             });
-        }
 
-        $('#send-btn').click(async function() {
-            const userMessage = $('#user-input').val();
-            if (userMessage.trim() === '') return;
-            appendMessage('You', userMessage);
-            const key = `{{ key|safe }}`;
-            
-            const encryptedMessage = await encryptMessage(key, userMessage);
+            $('#send-btn').click(async function() {
+                const userMessage = $('#user-input').val().trim();
+                if (userMessage.trim() === '') return;
+                appendMessage('You', userMessage);
+                $('#user-input').val('');
+                $('#send-btn').prop('disabled', true);
+                $('.delete-chat-btn').prop('disabled', true);
+                $('#new-chat-sidebar-btn').prop('disabled', true);
+                $('#chat-list li').off('click');
+                $('#loading-spinner').show();
 
-            $('#user-input').val('');
-            $('#send-btn').prop('disabled', true);
-            $('.new-chat-btn').prop('disabled', true);
-            $('.past-chats-btn').prop('disabled', true);
-            $('#loading-spinner').show();
+                const encryptedMessage = await encryptMessage(key, userMessage);
 
-            $.ajax({
-                url: '/',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ msg: encryptedMessage }),
-                success: function(response) {
-                    console.log('Received response:', response);  // Log the received response
-                    $('#loading-spinner').hide();
-                    const encryptedResponse = response.msg;
-                    if (encryptedResponse) {
-                        const privateKeyPem = `-----BEGIN RSA PRIVATE KEY-----
+                $.ajax({
+                    url: '/?chat_id=' + encodeURIComponent(chat_id),
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ msg: encryptedMessage }),
+                    success: function(response) {
+                        $('#loading-spinner').hide();
+                        const encryptedResponse = response.msg;
+                        console.log('Received: ', response.msg);
+                        if (encryptedResponse) {
+                            const privateKeyPem = `-----BEGIN RSA PRIVATE KEY-----
 MIIEogIBAAKCAQEAtCFn1yO3bNWTndSgPoeOlGKjYrXBiYBEITLZ16j6cHV/xDjI
 jxuoC1hbAzsy5v2zdwT9sszaq5ZVTdPJI3fhJkjcip0ByfCU5EMFbZ1Hr7Wrm7sd
 S0FHmFv2IpbPvUfMTBMdG2ReNQbCuuL1pKp+VzFcRZlDr0mDr8kzYffNsKMDFvWQ
@@ -251,72 +446,61 @@ ZdyZKa1P0Eki5bG44XTEszy8Jju8KfKGpDrxk8HFUrndFJeTcJpixGMV5suUJxAR
 oHwCrJhH3qL7iyG4slPPVI7y7sPb6f8d0XGkwzL4GvFGG/6ui2DdjSXISwsNXMEc
 fGYFAoGAfPZlBEWJ97wK17iir5ouKC5Ejtuoqv3LMM57cjTp5Sd3AX8hu1XjlnuE
 LYTlbukj7ysFNbEJ81hWJOgOjeuEd/big13Qk3RTGbTGaTvz2S/3H862OgHBqWOk
-bEl52gzZpgDXymYeG0IuDYKV9TcY6/7o52fdpv5aOy/4YUyKDNM=-----END RSA PRIVATE KEY-----`;
+bEl52gzZpgDXymYeG0IuDYKV9TcY6/7o52fdpv5aOy/4YUyKDNM=
+-----END RSA PRIVATE KEY-----`;
 
-                        try {
-                            var privateKey = forge.pki.privateKeyFromPem(privateKeyPem);
-                            var decryptedData = JSON.parse(encryptedResponse);  // Parse JSON response directly
-                            var encryptedAesKey = forge.util.decode64(decryptedData.encrypted_aes_key);
-                            var iv = forge.util.decode64(decryptedData.iv);
-                            var ciphertext = forge.util.decode64(decryptedData.ciphertext);
-                            var tag = forge.util.decode64(decryptedData.tag);
+                            try {
+                                var privateKey = forge.pki.privateKeyFromPem(privateKeyPem);
+                                var decryptedData = JSON.parse(encryptedResponse);
+                                var encryptedAesKey = forge.util.decode64(decryptedData.encrypted_aes_key);
+                                var iv = forge.util.decode64(decryptedData.iv);
+                                var ciphertext = forge.util.decode64(decryptedData.ciphertext);
+                                var tag = forge.util.decode64(decryptedData.tag);
 
-                            // Decrypt the AES key using RSA
-                            var aesKey = privateKey.decrypt(encryptedAesKey, 'RSA-OAEP', {
-                                md: forge.md.sha256.create(),
-                                mgf1: forge.mgf1.create(),
-                            });
+                                // Decrypt the AES key using RSA
+                                var aesKey = privateKey.decrypt(encryptedAesKey, 'RSA-OAEP', {
+                                    md: forge.md.sha256.create(),
+                                    mgf1: forge.mgf1.create(),
+                                });
 
-                            // Decrypt the ciphertext using the AES key
-                            var decipher = forge.cipher.createDecipher('AES-GCM', aesKey);
-                            decipher.start({ iv: iv, tag: tag });
-                            decipher.update(forge.util.createBuffer(ciphertext));
-                            var pass = decipher.finish();
-                            var decryptedMessage = decipher.output.toString();
+                                // Decrypt the ciphertext using the AES key
+                                var decipher = forge.cipher.createDecipher('AES-GCM', aesKey);
+                                decipher.start({ iv: iv, tag: tag });
+                                decipher.update(forge.util.createBuffer(ciphertext));
+                                var pass = decipher.finish();
+                                var decryptedMessage = decipher.output.toString();
+                                console.log('Decrypted: ', decryptedMessage);
 
-                            if (pass) {
-                                console.log('Decrypted message:', decryptedMessage);
-                                appendMessage('MediBot', '');
-                                typeResponse(decryptedMessage);
-                                $('#send-btn').prop('disabled', false);
-                                $('.new-chat-btn').prop('disabled', false);
-                                $('.past-chats-btn').prop('disabled', false);
-                            } else {
-                                console.error('Failed to decrypt the message.');
+                                if (pass) {
+                                    appendMessage('MediBot', decryptedMessage);
+                                    $('#send-btn').prop('disabled', false);
+                                    $('#new-chat-sidebar-btn').prop('disabled', false);
+                                    $('.delete-chat-btn').prop('disabled', false);
+                                    loadChats();
+                                } else {
+                                    console.error('Failed to decrypt the message.');
+                                }
+                            } catch (e) {
+                                console.error('Decryption error:', e);
                             }
-                        } catch (e) {
-                            console.error('Decryption error:', e);
                         }
-                    }
-                },
-                error: function(response) {
-                    $('#loading-spinner').hide();
-                    $('#send-btn').prop('disabled', false);
-                    $('.new-chat-btn').prop('disabled', false);
-                    $('.past-chats-btn').prop('disabled', false);
-                    location.reload(false);
-                },
+                    },
+                    error: function(response) {
+                        $('#loading-spinner').hide();
+                        $('#send-btn').prop('disabled', false);
+                        $('#new-chat-sidebar-btn').prop('disabled', false);
+                        alert('An error occurred. Please try again.');
+                    },
+                });
             });
-        });
 
-        $('.new-chat-btn').click(function() {
-            // Add logic to start a new chat
-            $.ajax({
-                url: '/new_chat', // Add appropriate endpoint for new chat
-                type: 'POST',
-                success: function() {
-                    location.reload(); // Reload the page to start a new chat
+            // Enable send on Enter key press
+            $('#user-input').keypress(function(e) {
+                if (e.which == 13) {
+                    $('#send-btn').click();
+                    return false; // prevent the button click from being triggered twice
                 }
             });
-        });
-
-        $('.past-chats-btn').click(function() {
-            // Add logic to view past chats
-            window.location.href = '/past_chats'; // Redirect to past chats page
-        });
-
-        $('#logout-btn').click(function() {
-            window.location.href = '/logout'; // Redirect to logout endpoint
         });
     </script>
 </body>
